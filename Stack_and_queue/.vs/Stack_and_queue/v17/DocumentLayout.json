@@ -1,0 +1,75 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\data_structure\\Stack_and_queue\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{83B68824-B2F4-4FBF-B5CD-66BE51E8383F}|Stack_and_queue\\Stack_and_queue.vcxproj|E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\usequeue.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{83B68824-B2F4-4FBF-B5CD-66BE51E8383F}|Stack_and_queue\\Stack_and_queue.vcxproj|solutionrelative:Stack_and_queue\\usequeue.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83B68824-B2F4-4FBF-B5CD-66BE51E8383F}|Stack_and_queue\\Stack_and_queue.vcxproj|E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\useStack.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{83B68824-B2F4-4FBF-B5CD-66BE51E8383F}|Stack_and_queue\\Stack_and_queue.vcxproj|solutionrelative:Stack_and_queue\\useStack.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83B68824-B2F4-4FBF-B5CD-66BE51E8383F}|Stack_and_queue\\Stack_and_queue.vcxproj|E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\Stack.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{83B68824-B2F4-4FBF-B5CD-66BE51E8383F}|Stack_and_queue\\Stack_and_queue.vcxproj|solutionrelative:Stack_and_queue\\Stack.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 100,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "usequeue.cpp",
+              "DocumentMoniker": "E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\usequeue.cpp",
+              "RelativeDocumentMoniker": "Stack_and_queue\\usequeue.cpp",
+              "ToolTip": "E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\usequeue.cpp",
+              "RelativeToolTip": "Stack_and_queue\\usequeue.cpp",
+              "ViewState": "AgIAAEUAAAAAAAAAAAAAAHEAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-10-18T11:02:36.578Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "useStack.cpp",
+              "DocumentMoniker": "E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\useStack.cpp",
+              "RelativeDocumentMoniker": "Stack_and_queue\\useStack.cpp",
+              "ToolTip": "E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\useStack.cpp",
+              "RelativeToolTip": "Stack_and_queue\\useStack.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-10-13T12:15:46.348Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Stack.h",
+              "DocumentMoniker": "E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\Stack.h",
+              "RelativeDocumentMoniker": "Stack_and_queue\\Stack.h",
+              "ToolTip": "E:\\data_structure\\Stack_and_queue\\Stack_and_queue\\Stack.h",
+              "RelativeToolTip": "Stack_and_queue\\Stack.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-10-13T12:04:53.633Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

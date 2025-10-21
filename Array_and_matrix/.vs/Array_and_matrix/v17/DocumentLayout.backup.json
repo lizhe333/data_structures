@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\data_structure\\Array_and_matrix\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5454B991-B7D9-421E-B0C9-B7CF3F822396}|Array_and_matrix\\Array_and_matrix.vcxproj|E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\use_Martix.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5454B991-B7D9-421E-B0C9-B7CF3F822396}|Array_and_matrix\\Array_and_matrix.vcxproj|solutionrelative:Array_and_matrix\\use_Martix.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5454B991-B7D9-421E-B0C9-B7CF3F822396}|Array_and_matrix\\Array_and_matrix.vcxproj|E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\Martix.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5454B991-B7D9-421E-B0C9-B7CF3F822396}|Array_and_matrix\\Array_and_matrix.vcxproj|solutionrelative:Array_and_matrix\\Martix.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5454B991-B7D9-421E-B0C9-B7CF3F822396}|Array_and_matrix\\Array_and_matrix.vcxproj|E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\Martix.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5454B991-B7D9-421E-B0C9-B7CF3F822396}|Array_and_matrix\\Array_and_matrix.vcxproj|solutionrelative:Array_and_matrix\\Martix.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 100,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Martix.cpp",
+              "DocumentMoniker": "E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\Martix.cpp",
+              "RelativeDocumentMoniker": "Array_and_matrix\\Martix.cpp",
+              "ToolTip": "E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\Martix.cpp*",
+              "RelativeToolTip": "Array_and_matrix\\Martix.cpp*",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAAAFwAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-09-24T12:14:25.243Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "use_Martix.cpp",
+              "DocumentMoniker": "E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\use_Martix.cpp",
+              "RelativeDocumentMoniker": "Array_and_matrix\\use_Martix.cpp",
+              "ToolTip": "E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\use_Martix.cpp",
+              "RelativeToolTip": "Array_and_matrix\\use_Martix.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-09-28T00:22:02.265Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Martix.h",
+              "DocumentMoniker": "E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\Martix.h",
+              "RelativeDocumentMoniker": "Array_and_matrix\\Martix.h",
+              "ToolTip": "E:\\data_structure\\Array_and_matrix\\Array_and_matrix\\Martix.h",
+              "RelativeToolTip": "Array_and_matrix\\Martix.h",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABcAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-09-24T12:04:01.337Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
