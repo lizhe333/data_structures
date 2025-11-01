@@ -3,14 +3,18 @@
   "WorkspaceRootPath": "E:\\data_structure\\trees\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6A9055CE-4719-4423-A3D9-E5C03AA25F76}|trees.vcxproj|E:\\data_structure\\trees\\tree.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{6A9055CE-4719-4423-A3D9-E5C03AA25F76}|trees.vcxproj|solutionrelative:tree.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\data_structure\\trees\\layer_and_inorder.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:layer_and_inorder.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\data_structure\\trees\\tree.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:tree.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
-      "VerticalTabListWidth": 256,
+      "VerticalTabListWidth": 100,
       "DocumentGroups": [
         {
           "DockedWidth": 200,
@@ -23,12 +27,25 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "layer_and_inorder.cpp",
+              "DocumentMoniker": "E:\\data_structure\\trees\\layer_and_inorder.cpp",
+              "RelativeDocumentMoniker": "layer_and_inorder.cpp",
+              "ToolTip": "E:\\data_structure\\trees\\layer_and_inorder.cpp",
+              "RelativeToolTip": "layer_and_inorder.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-10-31T13:49:45.81Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "tree.cpp",
               "DocumentMoniker": "E:\\data_structure\\trees\\tree.cpp",
               "RelativeDocumentMoniker": "tree.cpp",
               "ToolTip": "E:\\data_structure\\trees\\tree.cpp",
               "RelativeToolTip": "tree.cpp",
-              "ViewState": "AgIAACQAAAAAAAAAAAAAADwAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADMAAAAAAAAAAAAAADwAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-10-26T13:54:52.12Z",
               "EditorCaption": ""
