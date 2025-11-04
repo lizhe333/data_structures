@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\data_structure\\graph\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{C135673D-DB11-446E-9D98-5A25EECEAA96}|graph.vcxproj|E:\\data_structure\\graph\\graph.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{C135673D-DB11-446E-9D98-5A25EECEAA96}|graph.vcxproj|solutionrelative:graph.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 100,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "graph.cpp",
+              "DocumentMoniker": "E:\\data_structure\\graph\\graph.cpp",
+              "RelativeDocumentMoniker": "graph.cpp",
+              "ToolTip": "E:\\data_structure\\graph\\graph.cpp",
+              "RelativeToolTip": "graph.cpp",
+              "ViewState": "AgIAAFkAAAAAAAAAAAAAAHcAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-11-04T12:31:04.114Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
