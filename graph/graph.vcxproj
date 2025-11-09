@@ -124,6 +124,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="graph.cpp" />
+    <ClCompile Include="Shortestcut.cpp" />
+    <ClCompile Include="spanningtree.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
