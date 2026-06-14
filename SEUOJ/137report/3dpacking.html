@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>137.cc 极端点装箱可视化</title>
+    <style>
+        :root {
+            --panel-bg: rgba(9, 14, 22, 0.68);
+            --panel-border: rgba(132, 214, 255, 0.22);
+            --text: #eef7ff;
+            --muted: #9fb3c7;
+            --cyan: #35d6ff;
+            --orange: #ff8a3d;
+            --red: #ff3f5f;
+            --green: #7ee0a8;
+            --line: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text);
+            font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+            background:
+                linear-gradient(145deg, #111821 0%, #071014 46%, #050608 100%);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent 78%);
+        }
+
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container > canvas {
+            position: absolute;
+            inset: 0;
+        }
+
+        #fallback-canvas {
+            display: none;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        #fallback-svg {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        #fallback-svg .ep-dot {
+            animation: epPulse 1.4s ease-in-out infinite;
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        @keyframes epPulse {
+            0%, 100% { transform: scale(0.92); opacity: 0.9; }
+            50% { transform: scale(1.18); opacity: 1; }
+        }
+
+        #canvas-container > canvas:not(#fallback-canvas) {
+            z-index: 2;
+            opacity: 1;
+        }
+
+        #ui-panel {
+            position: absolute;
+            z-index: 10;
+            left: 24px;
+            top: 24px;
+            width: 320px;
+            max-width: calc(100vw - 48px);
+            max-height: calc(100vh - 48px);
+            overflow: auto;
+            padding: 16px;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            background: var(--panel-bg);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(18px) saturate(145%);
+        }
+
+        .eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: var(--cyan);
+            font-size: 12px;
+            line-height: 1;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 18px var(--cyan);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 21px;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        #step-index {
+            display: inline-flex;
+            align-items: center;
+            height: 24px;
+            padding: 0 9px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(53, 214, 255, 0.24);
+            border-radius: 999px;
+            color: #bfefff;
+            background: rgba(53, 214, 255, 0.08);
+            font-size: 12px;
+        }
+
+        #step-title {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.35;
+            color: #ffffff;
+        }
+
+        #step-desc {
+            margin: 8px 0 0;
+            color: #d7e3ef;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .rule-line {
+            margin: 12px 0 0;
+            padding: 9px 0 0;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .rule-line strong {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        #decision-list {
+            margin: 10px 0 0;
+            padding: 0;
+            list-style: none;
+            border-top: 1px solid var(--line);
+        }
+
+        #decision-list li {
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+            color: #d9e5ef;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .tag {
+            align-self: start;
+            padding: 3px 7px;
+            border-radius: 999px;
+            text-align: center;
+            font-size: 11px;
+            color: #061018;
+            background: #d4ecff;
+            white-space: nowrap;
+        }
+
+        .tag.pass {
+            background: var(--green);
+        }
+
+        .tag.fail {
+            color: #fff;
+            background: var(--red);
+        }
+
+        .tag.info {
+            color: #061018;
+            background: var(--cyan);
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 12px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            min-width: 0;
+            gap: 8px;
+        }
+
+        .swatch {
+            width: 10px;
+            height: 10px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            box-shadow: 0 0 14px currentColor;
+        }
+
+        .swatch.container {
+            border-radius: 2px;
+            color: var(--cyan);
+            background: transparent;
+            border: 1px solid var(--cyan);
+        }
+
+        .swatch.item {
+            border-radius: 2px;
+            color: #81aef5;
+            background: #81aef5;
+        }
+
+        .swatch.ep {
+            color: var(--red);
+            background: var(--red);
+        }
+
+        .swatch.reject {
+            color: var(--red);
+            background: var(--red);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .mode-switch {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 12px 0 0;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.055);
+        }
+
+        .mode-switch button {
+            min-height: 30px;
+            border: 0;
+            border-radius: 6px;
+            color: #b8c7d6;
+            background: transparent;
+            font-size: 12px;
+        }
+
+        .mode-switch button.active {
+            color: #061018;
+            background: var(--cyan);
+            box-shadow: 0 0 18px rgba(53, 214, 255, 0.26);
+        }
+
+        .case-switch {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin: 8px 0 0;
+        }
+
+        .case-switch button {
+            min-height: 28px;
+            border-radius: 6px;
+            color: #c3d2df;
+            font-size: 12px;
+        }
+
+        .case-switch button.active {
+            color: #061018;
+            border-color: rgba(126, 224, 168, 0.75);
+            background: var(--green);
+        }
+
+        button {
+            min-height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 7px;
+            color: #effaff;
+            background: rgba(255, 255, 255, 0.08);
+            font: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            border-color: rgba(53, 214, 255, 0.45);
+            background: rgba(53, 214, 255, 0.15);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        #prev-btn,
+        #next-btn {
+            flex: 1;
+        }
+
+        #auto-btn {
+            flex: 1.15;
+            border-color: rgba(255, 138, 61, 0.28);
+            background: rgba(255, 138, 61, 0.12);
+        }
+
+        #auto-btn.active {
+            color: #14100d;
+            border-color: var(--orange);
+            background: var(--orange);
+        }
+
+        #hud {
+            position: absolute;
+            z-index: 10;
+            right: 24px;
+            bottom: 24px;
+            padding: 12px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #b9cbe0;
+            background: rgba(5, 9, 14, 0.5);
+            backdrop-filter: blur(12px);
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        #hud strong {
+            color: #ffffff;
+        }
+
+        .hint {
+            margin-top: 10px;
+            color: #9fb3c7;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 720px) {
+            #ui-panel {
+                left: 12px;
+                right: 12px;
+                top: 12px;
+                width: auto;
+                max-width: none;
+                max-height: 50vh;
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 21px;
+            }
+
+            .controls {
+                flex-wrap: wrap;
+            }
+
+            #hud {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="fallback-canvas"></canvas>
+        <svg id="fallback-svg" aria-hidden="true"></svg>
+    </div>
+
+    <section id="ui-panel" aria-live="polite">
+        <div class="eyebrow">3D Packing / Extreme Point</div>
+        <h1>装箱可视化对比</h1>
+
+        <div id="step-index">Step 0 / 3</div>
+        <h2 id="step-title"></h2>
+        <p id="step-desc"></p>
+
+        <div class="rule-line">
+            规则：物品先按体积降序；候选 EP 按 <strong>Z → Y → X</strong> 选。
+        </div>
+
+        <div class="mode-switch" aria-label="方案切换">
+            <button id="basic-mode-btn" type="button" class="active">137.cc</button>
+            <button id="v2-mode-btn" type="button">137_v2.cc</button>
+        </div>
+        <div class="case-switch" aria-label="测试点切换">
+            <button id="teaching-case-btn" type="button" class="active">讲解</button>
+            <button id="case2-btn" type="button">#2</button>
+            <button id="case59-btn" type="button">#59</button>
+        </div>
+
+        <ul id="decision-list"></ul>
+
+        <div class="legend">
+            <span><i class="swatch container"></i><span id="legend-container">选中箱 2</span></span>
+            <span><i class="swatch item"></i>已放物品</span>
+            <span><i class="swatch ep"></i>候选极端点 EP</span>
+            <span><i class="swatch reject"></i>失败候选</span>
+        </div>
+
+        <div class="controls">
+            <button id="prev-btn" type="button">← 上一步</button>
+            <button id="next-btn" type="button">下一步 →</button>
+            <button id="auto-btn" type="button">▶ 自动播放</button>
+        </div>
+        <div class="hint">鼠标左键旋转，滚轮缩放，右键平移。</div>
+    </section>
+
+    <aside id="hud">
+        <div id="hud-mode"><strong>方案</strong>：137.cc</div>
+        <div id="hud-input"><strong>输入</strong>：2 箱 / 4 物品</div>
+        <div id="hud-box"><strong>箱 2</strong>：100 × 80 × 70</div>
+        <div id="hud-order"><strong>放置序</strong>：1 → 2 → 3 → 4</div>
+        <div id="hud-output"><strong>输出序</strong>：1 → 2 → 3 → 4</div>
+    </aside>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ============================================================
+        // 1. 算法坐标与演示剧本
+        //    算法使用 (x, y, z)，其中 z 是高度。
+        //    Three.js 使用 y 作为高度，所以渲染时统一做一次坐标映射。
+        // ============================================================
+        let CONTAINER = { l: 100, w: 80, h: 70 };
+        const ITEM_COLORS = [
+            0x5da8ff, 0x83c7a5, 0xffb25f, 0xd884ff,
+            0xff6f91, 0xffd166, 0x64d2ff, 0x7ee0a8
+        ];
+
+        function placedItems(rows) {
+            return rows.map((row, index) => ({
+                id: String(index + 1),
+                name: `物品 ${index + 1}`,
+                pos: [row[0], row[1], row[2]],
+                size: [row[3], row[4], row[5]],
+                color: ITEM_COLORS[index % ITEM_COLORS.length],
+                edge: 0xffffff
+            }));
+        }
+
+        const BASIC_ITEMS = {
+            I1: {
+                id: "1",
+                name: "物品 1",
+                pos: [0, 0, 0],
+                size: [50, 32, 32],
+                color: 0x5da8ff,
+                edge: 0xeaf6ff
+            },
+            I2: {
+                id: "2",
+                name: "物品 2",
+                pos: [50, 0, 0],
+                size: [42, 34, 24],
+                color: 0x83c7a5,
+                edge: 0xf2fff8
+            },
+            I3: {
+                id: "3",
+                name: "物品 3",
+                pos: [0, 32, 0],
+                size: [42, 26, 30],
+                color: 0xffb25f,
+                edge: 0xfff5e5
+            },
+            I4: {
+                id: "4",
+                name: "物品 4",
+                pos: [50, 34, 0],
+                size: [26, 20, 18],
+                color: 0xd884ff,
+                edge: 0xfff0ff
+            }
+        };
+
+        const BASIC_STEPS = [
+            {
+                title: "输入与选箱",
+                desc: "箱 1 体积不足；箱 2 进入 packBox。物品按体积排序。",
+                items: [],
+                eps: [[0, 0, 0]],
+                decisions: [
+                    ["fail", "箱1", "55×50×45 < 物品总体积"],
+                    ["pass", "箱2", "100×80×70，开始尝试"],
+                    ["info", "排序", "1 → 2 → 3 → 4"]
+                ]
+            },
+            {
+                title: "放物品 1",
+                desc: "最大体积物品先放在原点，生成右、前、上三个 EP。",
+                items: [BASIC_ITEMS.I1],
+                newItem: BASIC_ITEMS.I1,
+                selectedEp: [0, 0, 0],
+                eps: [[50, 0, 0], [0, 32, 0], [0, 0, 32]],
+                decisions: [
+                    ["pass", "位置", "(0,0,0)"],
+                    ["info", "尺寸", "50×32×32"],
+                    ["info", "EP", "(50,0,0) / (0,32,0) / (0,0,32)"]
+                ]
+            },
+            {
+                title: "放物品 2",
+                desc: "按 Z、Y、X 选择第一个可行 EP，物品 2 贴在物品 1 右侧。",
+                items: [BASIC_ITEMS.I1, BASIC_ITEMS.I2],
+                newItem: BASIC_ITEMS.I2,
+                selectedEp: [50, 0, 0],
+                eps: [[92, 0, 0], [0, 32, 0], [50, 34, 0], [50, 0, 24], [0, 0, 32]],
+                decisions: [
+                    ["pass", "位置", "(50,0,0)"],
+                    ["pass", "碰撞", "仅贴边，不重叠"],
+                    ["info", "输出", "物品 2 最终行记录这里"]
+                ]
+            },
+            {
+                title: "放物品 3",
+                desc: "第一个 EP 越界，继续尝试下一个，物品 3 放到前侧空位。",
+                items: [BASIC_ITEMS.I1, BASIC_ITEMS.I2, BASIC_ITEMS.I3],
+                newItem: BASIC_ITEMS.I3,
+                selectedEp: [0, 32, 0],
+                rejectedCandidates: [
+                    { pos: [92, 0, 0], item: BASIC_ITEMS.I3 }
+                ],
+                eps: [[92, 0, 0], [42, 32, 0], [50, 34, 0], [0, 58, 0], [50, 0, 24], [0, 32, 30], [0, 0, 32]],
+                decisions: [
+                    ["fail", "EP1", "(92,0,0) 越界"],
+                    ["pass", "EP2", "(0,32,0) 可行"],
+                    ["info", "更新", "删除落入物品 3 内部的 EP"]
+                ]
+            },
+            {
+                title: "放物品 4",
+                desc: "前两个候选失败，第三个候选可行，四个物品全部装入箱 2。",
+                items: [BASIC_ITEMS.I1, BASIC_ITEMS.I2, BASIC_ITEMS.I3, BASIC_ITEMS.I4],
+                newItem: BASIC_ITEMS.I4,
+                selectedEp: [50, 34, 0],
+                rejectedCandidates: [
+                    { pos: [92, 0, 0], item: BASIC_ITEMS.I4 },
+                    { pos: [42, 32, 0], item: BASIC_ITEMS.I4 }
+                ],
+                eps: [[92, 0, 0], [42, 32, 0], [76, 34, 0], [50, 54, 0], [0, 58, 0], [50, 34, 18], [50, 0, 24], [0, 32, 30], [0, 0, 32]],
+                decisions: [
+                    ["fail", "EP1", "(92,0,0) 越界"],
+                    ["fail", "EP2", "(42,32,0) 碰撞"],
+                    ["pass", "EP3", "(50,34,0)"]
+                ]
+            },
+            {
+                title: "最终输出",
+                desc: "内部按体积放置；输出必须按原始物品编号排序。",
+                items: [BASIC_ITEMS.I1, BASIC_ITEMS.I2, BASIC_ITEMS.I3, BASIC_ITEMS.I4],
+                selectedEp: null,
+                eps: [],
+                decisions: [
+                    ["pass", "箱号", "2"],
+                    ["info", "行1", "0 0 0 50 32 32"],
+                    ["info", "行2", "50 0 0 42 34 24"],
+                    ["info", "行3", "0 32 0 42 26 30"],
+                    ["info", "行4", "50 34 0 26 20 18"]
+                ]
+            }
+        ];
+
+        const V2_ITEMS = {
+            I1: { ...BASIC_ITEMS.I1, pos: [0, 0, 0] },
+            I2: { ...BASIC_ITEMS.I2, pos: [0, 32, 0] },
+            I3: { ...BASIC_ITEMS.I3, pos: [50, 0, 0] },
+            I4: { ...BASIC_ITEMS.I4, pos: [0, 0, 32] }
+        };
+
+        const V2_STEPS = [
+            {
+                title: "增强版入口",
+                desc: "同一输入；先试多种排序。本例体积排序已可行。",
+                items: [],
+                eps: [[0, 0, 0]],
+                decisions: [
+                    ["pass", "箱2", "仍选择箱 2"],
+                    ["info", "排序", "1 → 2 → 3 → 4"],
+                    ["info", "评分", "优先接触面积更大"]
+                ]
+            },
+            {
+                title: "放物品 1",
+                desc: "第一件仍落在原点，后续会按接触面积挑位置。",
+                items: [V2_ITEMS.I1],
+                newItem: V2_ITEMS.I1,
+                selectedEp: [0, 0, 0],
+                eps: [[50, 0, 0], [0, 32, 0], [0, 0, 32]],
+                decisions: [
+                    ["pass", "位置", "(0,0,0)"],
+                    ["info", "EP", "右 / 前 / 上"],
+                    ["info", "差异", "后续不只看 EP 顺序"]
+                ]
+            },
+            {
+                title: "放物品 2",
+                desc: "右侧可放，但前侧接触面积更大，所以放到 (0,32,0)。",
+                items: [V2_ITEMS.I1, V2_ITEMS.I2],
+                newItem: V2_ITEMS.I2,
+                selectedEp: [0, 32, 0],
+                eps: [[50, 0, 0], [42, 32, 0], [0, 66, 0], [0, 32, 24], [0, 0, 32]],
+                decisions: [
+                    ["info", "候选", "(50,0,0) 也合法"],
+                    ["pass", "评分", "(0,32,0) 接触更多"],
+                    ["info", "结果", "物品 2 贴前侧"]
+                ]
+            },
+            {
+                title: "放物品 3",
+                desc: "评分后选择右侧空位，形成底层 L 形布局。",
+                items: [V2_ITEMS.I1, V2_ITEMS.I2, V2_ITEMS.I3],
+                newItem: V2_ITEMS.I3,
+                selectedEp: [50, 0, 0],
+                eps: [[92, 0, 0], [50, 26, 0], [42, 32, 0], [0, 66, 0], [0, 32, 24], [50, 0, 30], [0, 0, 32]],
+                decisions: [
+                    ["pass", "位置", "(50,0,0)"],
+                    ["info", "接触", "贴物品 1 右侧"],
+                    ["info", "更新", "继续维护 EP 列表"]
+                ]
+            },
+            {
+                title: "放物品 4",
+                desc: "增强版会计算 dropZ；顶部位置接触底面和两面箱壁，得分更高。",
+                items: [V2_ITEMS.I1, V2_ITEMS.I2, V2_ITEMS.I3, V2_ITEMS.I4],
+                newItem: V2_ITEMS.I4,
+                selectedEp: [0, 0, 32],
+                rejectedCandidates: [
+                    { pos: [92, 0, 0], item: V2_ITEMS.I4 }
+                ],
+                eps: [[92, 0, 0], [50, 26, 0], [42, 32, 0], [0, 66, 0], [0, 32, 24], [50, 0, 30], [26, 0, 32], [0, 20, 32], [0, 0, 50]],
+                decisions: [
+                    ["fail", "越界", "(92,0,0) 放不下"],
+                    ["info", "dropZ", "按投影下落到支撑面"],
+                    ["pass", "评分", "(0,0,32) 得分最高"]
+                ]
+            },
+            {
+                title: "增强版输出",
+                desc: "同样按原始编号输出，但位置与基础版不同。",
+                items: [V2_ITEMS.I1, V2_ITEMS.I2, V2_ITEMS.I3, V2_ITEMS.I4],
+                selectedEp: null,
+                eps: [],
+                decisions: [
+                    ["pass", "箱号", "2"],
+                    ["info", "行1", "0 0 0 50 32 32"],
+                    ["info", "行2", "0 32 0 42 34 24"],
+                    ["info", "行3", "50 0 0 42 26 30"],
+                    ["info", "行4", "0 0 32 26 20 18"]
+                ]
+            }
+        ];
+
+        const CASE2_BASIC_ITEMS = placedItems([
+            [0, 670, 0, 1260, 335, 480],
+            [1250, 0, 0, 40, 650, 650],
+            [1330, 0, 0, 30, 650, 650],
+            [0, 0, 270, 765, 300, 770],
+            [1290, 0, 0, 40, 650, 650],
+            [0, 0, 0, 1250, 670, 270],
+            [1360, 0, 0, 600, 900, 10]
+        ]);
+
+        const CASE2_V2_ITEMS = placedItems([
+            [0, 0, 270, 1260, 335, 480],
+            [0, 335, 270, 650, 40, 650],
+            [0, 970, 0, 650, 30, 650],
+            [0, 670, 0, 770, 300, 765],
+            [0, 375, 270, 650, 40, 650],
+            [0, 0, 0, 1250, 670, 270],
+            [0, 415, 270, 900, 10, 600]
+        ]);
+
+        const CASE59_BASIC_ITEMS = placedItems([
+            [1308, 0, 0, 1444, 1474, 45],
+            [0, 0, 0, 1308, 223, 442],
+            [0, 223, 0, 328, 244, 867],
+            [328, 223, 0, 517, 303, 9],
+            [0, 223, 867, 2181, 1034, 22],
+            [1308, 0, 45, 1455, 1810, 10],
+            [1308, 0, 55, 1353, 2021, 9]
+        ]);
+
+        const CASE59_V2_ITEMS = placedItems([
+            [0, 223, 0, 1474, 1444, 45],
+            [0, 0, 0, 1308, 223, 442],
+            [0, 223, 45, 244, 867, 328],
+            [0, 0, 483, 517, 303, 9],
+            [0, 0, 442, 2181, 1034, 22],
+            [0, 0, 464, 1810, 1455, 10],
+            [0, 0, 474, 2021, 1353, 9]
+        ]);
+
+        function finalStep(title, desc, items, decisions) {
+            return [{
+                title,
+                desc,
+                items,
+                selectedEp: null,
+                eps: [],
+                decisions
+            }];
+        }
+
+        const DEMOS = {
+            basic: {
+                label: "137.cc",
+                rule: "规则：物品先按体积降序；候选 EP 按 <strong>Z → Y → X</strong> 选。",
+                order: "1 → 2 → 3 → 4",
+                inputLabel: "2 箱 / 4 物品",
+                boxLabel: "箱 2：100 × 80 × 70",
+                legendLabel: "选中箱 2",
+                outputLabel: "1 → 2 → 3 → 4",
+                container: { l: 100, w: 80, h: 70 },
+                items: BASIC_ITEMS,
+                steps: BASIC_STEPS
+            },
+            v2: {
+                label: "137_v2.cc",
+                rule: "规则：多排序尝试；位置按 <strong>接触面积评分</strong>，并用 dropZ 下落。",
+                order: "1 → 2 → 3 → 4",
+                inputLabel: "2 箱 / 4 物品",
+                boxLabel: "箱 2：100 × 80 × 70",
+                legendLabel: "选中箱 2",
+                outputLabel: "1 → 2 → 3 → 4",
+                container: { l: 100, w: 80, h: 70 },
+                items: V2_ITEMS,
+                steps: V2_STEPS
+            },
+            case2_basic: {
+                label: "137.cc",
+                rule: "测试点 #2：基础版选择 <strong>箱 5</strong>，case_score = 60.82。",
+                order: "最终摆放",
+                inputLabel: "#2 / 14 箱 / 7 物品",
+                boxLabel: "箱 5：1974 × 1128 × 1081",
+                legendLabel: "箱 5",
+                outputLabel: "箱号 5",
+                container: { l: 1974, w: 1128, h: 1081 },
+                items: CASE2_BASIC_ITEMS,
+                steps: finalStep(
+                    "#2 基础版结果",
+                    "基础 EP 贪心选择箱 5，质量分 39.73，总分 60.82。",
+                    CASE2_BASIC_ITEMS,
+                    [
+                        ["info", "箱子", "选择箱 5"],
+                        ["info", "体积", "2407032432"],
+                        ["info", "得分", "60.82"]
+                    ]
+                )
+            },
+            case2_v2: {
+                label: "137_v2.cc",
+                rule: "测试点 #2：优化版把同一批物品装入 <strong>箱 3</strong>，case_score = 71.19。",
+                order: "最终摆放",
+                inputLabel: "#2 / 14 箱 / 7 物品",
+                boxLabel: "箱 3：1764 × 1008 × 966",
+                legendLabel: "箱 3",
+                outputLabel: "箱号 3",
+                container: { l: 1764, w: 1008, h: 966 },
+                items: CASE2_V2_ITEMS,
+                steps: finalStep(
+                    "#2 优化版结果",
+                    "多策略与接触面积评分找到更小箱子，质量分升到 55.67。",
+                    CASE2_V2_ITEMS,
+                    [
+                        ["pass", "箱子", "箱 5 → 箱 3"],
+                        ["pass", "提升", "60.82 → 71.19"],
+                        ["info", "原因", "更小箱体，空间利用率更高"]
+                    ]
+                )
+            },
+            case59_basic: {
+                label: "137.cc",
+                rule: "测试点 #59：基础版选择 <strong>箱 10</strong>，case_score = 49.29。",
+                order: "最终摆放",
+                inputLabel: "#59 / 18 箱 / 7 物品",
+                boxLabel: "箱 10：2808 × 2160 × 1296",
+                legendLabel: "箱 10",
+                outputLabel: "箱号 10",
+                container: { l: 2808, w: 2160, h: 1296 },
+                items: CASE59_BASIC_ITEMS,
+                steps: finalStep(
+                    "#59 基础版结果",
+                    "基础版需要箱 10 才能放下，质量分只有 21.98。",
+                    CASE59_BASIC_ITEMS,
+                    [
+                        ["info", "箱子", "选择箱 10"],
+                        ["info", "体积", "7860602880"],
+                        ["info", "得分", "49.29"]
+                    ]
+                )
+            },
+            case59_v2: {
+                label: "137_v2.cc",
+                rule: "测试点 #59：优化版把结果压进 <strong>箱 5</strong>，case_score = 65.37。",
+                order: "最终摆放",
+                inputLabel: "#59 / 18 箱 / 7 物品",
+                boxLabel: "箱 5：2184 × 1680 × 1008",
+                legendLabel: "箱 5",
+                outputLabel: "箱号 5",
+                container: { l: 2184, w: 1680, h: 1008 },
+                items: CASE59_V2_ITEMS,
+                steps: finalStep(
+                    "#59 优化版结果",
+                    "优化版选择更紧凑的最终布局，质量分升到 46.72。",
+                    CASE59_V2_ITEMS,
+                    [
+                        ["pass", "箱子", "箱 10 → 箱 5"],
+                        ["pass", "提升", "49.29 → 65.37"],
+                        ["info", "原因", "多排序搜索找到更小可行箱"]
+                    ]
+                )
+            }
+        };
+
+        const SCENARIOS = {
+            teaching: { basic: "basic", v2: "v2" },
+            case2: { basic: "case2_basic", v2: "case2_v2" },
+            case59: { basic: "case59_basic", v2: "case59_v2" }
+        };
+
+        let activeScenario = "teaching";
+        let activeMode = "basic";
+        let activeDemo = DEMOS.basic;
+        let ITEMS = activeDemo.items;
+        let STEPS = activeDemo.steps;
+
+        // ============================================================
+        // 2. Three.js 场景初始化
+        // ============================================================
+        const container = document.getElementById("canvas-container");
+        const fallbackCanvas = document.getElementById("fallback-canvas");
+        const fallbackCtx = fallbackCanvas.getContext("2d");
+        const fallbackSvg = document.getElementById("fallback-svg");
+        let fallbackStep = STEPS[0];
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05070a, 0.0035);
+
+        const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(170, 120, 185);
+        camera.lookAt(50, 30, 40);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.NoToneMapping;
+        renderer.toneMappingExposure = 1;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(50, 30, 40);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 90;
+        controls.maxDistance = 310;
+
+        const ambientLight = new THREE.HemisphereLight(0xffffff, 0x20242c, 0.92);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 0.95);
+        keyLight.position.set(65, 130, 70);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(2048, 2048);
+        keyLight.shadow.camera.left = -80;
+        keyLight.shadow.camera.right = 160;
+        keyLight.shadow.camera.top = 150;
+        keyLight.shadow.camera.bottom = -90;
+        keyLight.shadow.camera.near = 5;
+        keyLight.shadow.camera.far = 320;
+        scene.add(keyLight);
+
+        const rimLight = new THREE.PointLight(0x38e7ff, 1.2, 240);
+        rimLight.position.set(-24, 86, 112);
+        scene.add(rimLight);
+
+        // 地面用于接收柔和阴影；轻微偏移，避免与箱体底面闪烁。
+        const floorGeo = new THREE.PlaneGeometry(180, 150);
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x0a1018,
+            roughness: 0.82,
+            metalness: 0.08,
+            transparent: true,
+            opacity: 0.52
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(50, -0.04, 40);
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const grid = new THREE.GridHelper(140, 14, 0x24768f, 0x17313f);
+        grid.position.set(50, 0.01, 40);
+        grid.material.transparent = true;
+        grid.material.opacity = 0.22;
+        scene.add(grid);
+
+        const itemsGroup = new THREE.Group();
+        const epGroup = new THREE.Group();
+        const helperGroup = new THREE.Group();
+        const containerGroup = new THREE.Group();
+        scene.add(itemsGroup, epGroup, helperGroup, containerGroup);
+
+        buildContainerFrame();
+        fitSceneToContainer();
+
+        // ============================================================
+        // 3. UI 与状态
+        // ============================================================
+        const stepIndexEl = document.getElementById("step-index");
+        const stepTitleEl = document.getElementById("step-title");
+        const stepDescEl = document.getElementById("step-desc");
+        const decisionListEl = document.getElementById("decision-list");
+        const ruleLineEl = document.querySelector(".rule-line");
+        const prevBtn = document.getElementById("prev-btn");
+        const nextBtn = document.getElementById("next-btn");
+        const autoBtn = document.getElementById("auto-btn");
+        const basicModeBtn = document.getElementById("basic-mode-btn");
+        const v2ModeBtn = document.getElementById("v2-mode-btn");
+        const teachingCaseBtn = document.getElementById("teaching-case-btn");
+        const case2Btn = document.getElementById("case2-btn");
+        const case59Btn = document.getElementById("case59-btn");
+        const hudModeEl = document.getElementById("hud-mode");
+        const hudInputEl = document.getElementById("hud-input");
+        const hudBoxEl = document.getElementById("hud-box");
+        const hudOrderEl = document.getElementById("hud-order");
+        const hudOutputEl = document.getElementById("hud-output");
+        const legendContainerEl = document.getElementById("legend-container");
+
+        let currentStep = 0;
+        let isAnimating = false;
+        let autoPlaying = false;
+        let autoTimer = null;
+        let pendingTimers = [];
+        let epObjects = new Map();
+        let spinningEps = [];
+
+        prevBtn.addEventListener("click", () => goToStep(Math.max(0, currentStep - 1)));
+        nextBtn.addEventListener("click", () => {
+            const target = currentStep === STEPS.length - 1 ? 0 : currentStep + 1;
+            goToStep(target);
+        });
+        autoBtn.addEventListener("click", toggleAutoPlay);
+        basicModeBtn.addEventListener("click", () => switchMode("basic"));
+        v2ModeBtn.addEventListener("click", () => switchMode("v2"));
+        teachingCaseBtn.addEventListener("click", () => switchScenario("teaching"));
+        case2Btn.addEventListener("click", () => switchScenario("case2"));
+        case59Btn.addEventListener("click", () => switchScenario("case59"));
+
+        // 首屏渲染。支持通过 ?step=1 直接打开指定步骤，便于调试和演示。
+        const initialStep = Math.max(0, Math.min(STEPS.length - 1, Number(new URLSearchParams(location.search).get("step")) || 0));
+        renderStep(initialStep);
+
+        // ============================================================
+        // 4. 渲染步骤：根据结构化剧本重建场景
+        // ============================================================
+        function goToStep(index) {
+            clearAutoTimer();
+            renderStep(index);
+        }
+
+        function switchMode(mode) {
+            if (activeMode === mode) return;
+            activeMode = mode;
+            applyActiveDemo();
+        }
+
+        function switchScenario(scenario) {
+            if (activeScenario === scenario) return;
+            activeScenario = scenario;
+            applyActiveDemo();
+        }
+
+        function applyActiveDemo() {
+            clearAutoTimer();
+            autoPlaying = false;
+            activeDemo = DEMOS[SCENARIOS[activeScenario][activeMode]];
+            ITEMS = activeDemo.items;
+            STEPS = activeDemo.steps;
+            CONTAINER = activeDemo.container;
+            buildContainerFrame();
+            fitSceneToContainer();
+            currentStep = 0;
+            renderStep(0);
+        }
+
+        function renderStep(index) {
+            index = Math.max(0, Math.min(STEPS.length - 1, index));
+            clearPendingTimers();
+            clearGroup(itemsGroup);
+            clearGroup(epGroup);
+            clearGroup(helperGroup);
+            epObjects.clear();
+            spinningEps = [];
+
+            currentStep = index;
+            updatePanel(index);
+
+            const step = STEPS[index];
+            fallbackStep = step;
+            isAnimating = false;
+            updateButtons();
+
+            // 按用户要求取消“方块飞入”动画：每一步直接重建最终状态。
+            try {
+                step.items.forEach(item => addItem(item, false));
+                getRejectedCandidates(step).forEach(candidate => {
+                    showRejectedCandidateStatic(candidate.item, candidate.pos);
+                });
+                drawEPs(step.eps, {
+                    newKeys: new Set(),
+                    selectedKey: step.selectedEp ? keyOf(step.selectedEp) : null,
+                    instant: true
+                });
+
+                // 验证当前 EP 列表：根据 137.cc 的 updateEPList 策略，
+                // 任何落在已放置物品内部的 EP 都是“死点”，应当已被剔除。
+                const deadEPs = step.eps.filter(ep => isPointInsideAnyItem(ep, step.items));
+                if (deadEPs.length > 0) {
+                    console.warn(`Step ${index}: 发现死点 (位于已放置物品内部的 EP):`, deadEPs);
+                }
+            } catch (error) {
+                console.error("Three.js render failed, SVG fallback remains active:", error);
+            }
+            finishAnimation();
+        }
+
+        function finishAnimation() {
+            isAnimating = false;
+            updateButtons();
+            if (autoPlaying) {
+                autoTimer = setTimeout(() => {
+                    const target = currentStep === STEPS.length - 1 ? 0 : currentStep + 1;
+                    renderStep(target);
+                }, currentStep === STEPS.length - 1 ? 1800 : 1150);
+            }
+        }
+
+        // ============================================================
+        // 5. 几何体构建
+        // ============================================================
+        function buildContainerFrame() {
+            clearGroup(containerGroup);
+
+            const boxGeo = new THREE.BoxGeometry(CONTAINER.l, CONTAINER.h, CONTAINER.w);
+            const faceMat = new THREE.MeshBasicMaterial({
+                color: 0x35d6ff,
+                transparent: true,
+                opacity: 0.035,
+                side: THREE.BackSide,
+                depthWrite: false
+            });
+            const faces = new THREE.Mesh(boxGeo, faceMat);
+            faces.position.set(CONTAINER.l / 2, CONTAINER.h / 2, CONTAINER.w / 2);
+            containerGroup.add(faces);
+
+            const edgeGeo = new THREE.EdgesGeometry(boxGeo);
+            const edgeMat = new THREE.LineBasicMaterial({
+                color: 0x55dfff,
+                transparent: true,
+                opacity: 0.72
+            });
+            const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+            edges.position.copy(faces.position);
+            containerGroup.add(edges);
+
+            const glowMat = new THREE.LineBasicMaterial({
+                color: 0x1aa6ff,
+                transparent: true,
+                opacity: 0.22,
+                blending: THREE.AdditiveBlending
+            });
+            const glow = new THREE.LineSegments(edgeGeo, glowMat);
+            glow.position.copy(faces.position);
+            glow.scale.set(1.01, 1.01, 1.01);
+            containerGroup.add(glow);
+        }
+
+        function fitSceneToContainer() {
+            const maxDim = Math.max(CONTAINER.l, CONTAINER.w, CONTAINER.h);
+            const center = new THREE.Vector3(CONTAINER.l / 2, CONTAINER.h / 2, CONTAINER.w / 2);
+            const fogDensity = Math.min(0.0035, 0.24 / maxDim);
+
+            controls.target.copy(center);
+            camera.near = Math.max(0.1, maxDim / 1000);
+            camera.far = maxDim * 8;
+            camera.position.set(
+                center.x + maxDim * 1.25,
+                center.y + maxDim * 0.95,
+                center.z + maxDim * 1.35
+            );
+            camera.lookAt(center);
+            camera.updateProjectionMatrix();
+
+            controls.minDistance = maxDim * 0.35;
+            controls.maxDistance = maxDim * 4.5;
+
+            scene.fog = new THREE.FogExp2(0x05070a, fogDensity);
+
+            keyLight.position.set(center.x + maxDim * 0.35, center.y + maxDim * 1.25, center.z + maxDim * 0.45);
+            keyLight.shadow.camera.left = -maxDim * 0.9;
+            keyLight.shadow.camera.right = maxDim * 0.9;
+            keyLight.shadow.camera.top = maxDim * 0.9;
+            keyLight.shadow.camera.bottom = -maxDim * 0.9;
+            keyLight.shadow.camera.near = Math.max(1, maxDim * 0.02);
+            keyLight.shadow.camera.far = maxDim * 4;
+            keyLight.shadow.camera.updateProjectionMatrix();
+
+            rimLight.position.set(center.x - maxDim * 0.8, center.y + maxDim * 0.75, center.z + maxDim * 0.85);
+            rimLight.distance = maxDim * 4;
+
+            floor.position.set(center.x, -0.04, center.z);
+            floor.scale.set(maxDim / 115, maxDim / 115, 1);
+
+            grid.position.set(center.x, 0.01, center.z);
+            grid.scale.set(maxDim / 140, 1, maxDim / 140);
+        }
+
+        function addItem(item, animated) {
+            const [l, w, h] = item.size;
+            const geo = new THREE.BoxGeometry(l, h, w);
+            // 使用朴素的实色材质，旋转观察时比复杂物理材质更清楚。
+            const mat = new THREE.MeshPhongMaterial({
+                color: item.color,
+                transparent: false,
+                opacity: 1,
+                emissive: item.color,
+                emissiveIntensity: 0.42,
+                shininess: 18
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(centerFromItem(item));
+            mesh.castShadow = true;
+            mesh.receiveShadow = false;
+            mesh.userData.itemId = item.id;
+            mesh.renderOrder = 2;
+
+            const edgeGeo = new THREE.EdgesGeometry(geo);
+            const edgeMat = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.94
+            });
+            const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+            edges.renderOrder = 3;
+            mesh.add(edges);
+
+            const label = makeLabelSprite(item.id, "#061018", "rgba(255,255,255,0.72)");
+            label.position.set(0, h / 2 + 5, 0);
+            label.scale.set(11, 5, 1);
+            label.renderOrder = 4;
+            mesh.add(label);
+
+            itemsGroup.add(mesh);
+
+            if (!animated) {
+                mesh.scale.set(1, 1, 1);
+            }
+            return mesh;
+        }
+
+        function drawEPs(points, options) {
+            clearGroup(epGroup);
+            epObjects.clear();
+            spinningEps = [];
+
+            const selectedKey = options.selectedKey;
+            const rankedPoints = [...points].sort(compareEP);
+            rankedPoints.forEach((point, index) => {
+                const key = keyOf(point);
+                const ep = createEP(point, {
+                    isSelected: key === selectedKey,
+                    rank: index + 1
+                });
+                epGroup.add(ep);
+                epObjects.set(key, ep);
+                spinningEps.push(ep);
+            });
+        }
+
+        function createEP(point, state) {
+            const group = new THREE.Group();
+            group.position.copy(toThree(point));
+            group.userData.pulseOffset = Math.random() * Math.PI * 2;
+            group.renderOrder = 20;
+
+            const color = state.isSelected ? 0xff3333 : 0xff0000;
+
+            // 光晕（底层）
+            const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: getHaloTexture(),
+                color,
+                transparent: true,
+                opacity: 0.35,
+                blending: THREE.AdditiveBlending
+            }));
+            halo.scale.set(state.isSelected ? 7 : 5, state.isSelected ? 7 : 5, 1);
+            halo.renderOrder = 20;
+            group.add(halo);
+
+            // 主红点
+            const dot = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: getDotTexture(),
+                color,
+                transparent: true,
+                opacity: 0.98
+            }));
+            dot.scale.set(state.isSelected ? 3.6 : 2.8, state.isSelected ? 3.6 : 2.8, 1);
+            dot.renderOrder = 21;
+            group.add(dot);
+
+            // 优先级序号（显示在红点上方）
+            if (state.rank) {
+                const rankLabel = makeEPRankSprite(state.rank, state.isSelected);
+                rankLabel.position.set(0, 2.2, 0);
+                rankLabel.scale.set(3.2, 3.2, 1);
+                rankLabel.renderOrder = 25;
+                group.add(rankLabel);
+            }
+
+            return group;
+        }
+
+        function compareEP(a, b) {
+            if (a[2] !== b[2]) return a[2] - b[2];
+            if (a[1] !== b[1]) return a[1] - b[1];
+            return a[0] - b[0];
+        }
+
+        function getRejectedCandidates(step) {
+            if (step.rejectedCandidates) return step.rejectedCandidates;
+            return step.rejected ? [step.rejected] : [];
+        }
+
+        function makeEPRankSprite(rank, isSelected) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, 64, 64);
+
+            ctx.fillStyle = isSelected ? "#ffeeee" : "#ffffff";
+            ctx.font = "bold 44px Microsoft YaHei, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.shadowColor = isSelected ? "rgba(255,50,50,0.9)" : "rgba(200,0,0,0.7)";
+            ctx.shadowBlur = 6;
+            ctx.fillText(String(rank), 32, 34);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true
+            });
+            return new THREE.Sprite(material);
+        }
+
+        function showRejectedCandidateStatic(item, pos) {
+            const candidate = { ...item, pos };
+            const [l, w, h] = candidate.size;
+            const ghostGroup = new THREE.Group();
+            ghostGroup.position.copy(centerFromItem(candidate));
+
+            const geo = new THREE.BoxGeometry(l, h, w);
+            const mat = new THREE.MeshBasicMaterial({
+                color: 0xff3f5f,
+                transparent: true,
+                opacity: 0.13,
+                depthWrite: false
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            ghostGroup.add(mesh);
+
+            const edges = new THREE.LineSegments(
+                new THREE.EdgesGeometry(geo),
+                new THREE.LineBasicMaterial({
+                    color: 0xff3f5f,
+                    transparent: true,
+                    opacity: 0.95
+                })
+            );
+            ghostGroup.add(edges);
+
+            const label = makeLabelSprite("失败", "#ffffff", "rgba(255,63,95,0.78)");
+            label.position.set(0, h / 2 + 7, 0);
+            label.scale.set(18, 7, 1);
+            ghostGroup.add(label);
+
+            helperGroup.add(ghostGroup);
+        }
+
+        // ============================================================
+        // 6. 2D 等轴测兜底视图
+        //    这一层使用 Canvas 2D 绘制同一份装箱数据。
+        //    如果某些环境下 WebGL/Three.js 没有正常显示，讲解画面仍然可见。
+        // ============================================================
+        function renderFallbackSvg(step) {
+            if (!fallbackSvg) return;
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const cfg = getFallbackConfig(width, height);
+            fallbackSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+            const parts = [
+                `<defs>
+                    <filter id="cyanGlow" x="-80%" y="-80%" width="260%" height="260%">
+                        <feGaussianBlur stdDeviation="4" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="redGlow" x="-120%" y="-120%" width="340%" height="340%">
+                        <feGaussianBlur stdDeviation="5" result="blur"/>
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+                        <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+                    </filter>
+                </defs>`
+            ];
+
+            parts.push(svgContainer(cfg));
+
+            getRejectedCandidates(step).forEach(candidate => {
+                parts.push(svgCuboid({ ...candidate.item, pos: candidate.pos }, cfg, {
+                    color: 0xff3f5f,
+                    alpha: 0.15,
+                    stroke: "rgba(255,95,125,0.96)",
+                    dashed: true,
+                    label: "失败"
+                }));
+            });
+
+            step.items
+                .slice()
+                .sort((a, b) => sum3(a.pos) - sum3(b.pos))
+                .forEach(item => {
+                    parts.push(svgCuboid(item, cfg, {
+                        color: item.color,
+                        alpha: 0.96,
+                        stroke: "rgba(255,255,255,0.92)",
+                        dashed: false,
+                        label: item.id
+                    }));
+                });
+
+            parts.push(svgEPs(step, cfg));
+            parts.push(svgAxes(cfg));
+            fallbackSvg.innerHTML = parts.join("");
+        }
+
+        function getFallbackConfig(width, height) {
+            const sideClearance = width > 900 ? 460 : 36;
+            const horizontalSpan = Math.max(1, CONTAINER.l + CONTAINER.w);
+            const verticalSpan = Math.max(1, (CONTAINER.l + CONTAINER.w) * 0.42 + CONTAINER.h);
+            const scale = Math.max(0.08, Math.min(
+                3.6,
+                (width - sideClearance - 120) / horizontalSpan,
+                (height - 130) / verticalSpan
+            ));
+            return {
+                scale,
+                originX: sideClearance + (width - sideClearance) * 0.45,
+                originY: height * 0.66
+            };
+        }
+
+        function svgContainer(cfg) {
+            const corners = [
+                [0, 0, 0], [CONTAINER.l, 0, 0], [0, CONTAINER.w, 0], [CONTAINER.l, CONTAINER.w, 0],
+                [0, 0, CONTAINER.h], [CONTAINER.l, 0, CONTAINER.h], [0, CONTAINER.w, CONTAINER.h], [CONTAINER.l, CONTAINER.w, CONTAINER.h]
+            ].map(point => projectIso(point, cfg));
+            const edges = [[0,1], [0,2], [1,3], [2,3], [4,5], [4,6], [5,7], [6,7], [0,4], [1,5], [2,6], [3,7]];
+            return `
+                <g filter="url(#cyanGlow)">
+                    ${svgPolygon([corners[4], corners[5], corners[7], corners[6]], `fill="rgba(61,221,255,0.035)" stroke="none"`)}
+                    ${svgPolygon([corners[2], corners[3], corners[7], corners[6]], `fill="rgba(61,221,255,0.035)" stroke="none"`)}
+                    ${edges.map(([a, b]) => svgLine(corners[a], corners[b], `stroke="rgba(61,221,255,0.82)" stroke-width="1.7"`)).join("")}
+                </g>`;
+        }
+
+        function svgCuboid(item, cfg, style) {
+            const [x, y, z] = item.pos;
+            const [l, w, h] = item.size;
+            const p = {
+                p000: projectIso([x, y, z], cfg),
+                p100: projectIso([x + l, y, z], cfg),
+                p010: projectIso([x, y + w, z], cfg),
+                p110: projectIso([x + l, y + w, z], cfg),
+                p001: projectIso([x, y, z + h], cfg),
+                p101: projectIso([x + l, y, z + h], cfg),
+                p011: projectIso([x, y + w, z + h], cfg),
+                p111: projectIso([x + l, y + w, z + h], cfg)
+            };
+            const dash = style.dashed ? `stroke-dasharray="8 7"` : "";
+            const stroke = `stroke="${style.stroke}" stroke-width="${style.dashed ? 2.2 : 1.5}" ${dash}`;
+            const topCenter = projectIso([x + l / 2, y + w / 2, z + h], cfg);
+            const labelFill = style.dashed ? "rgba(255,63,95,0.9)" : "rgba(255,255,255,0.9)";
+            const labelText = style.dashed ? "#ffffff" : "#071018";
+
+            return `
+                <g filter="url(#softShadow)">
+                    ${svgPolygon([p.p010, p.p110, p.p111, p.p011], `fill="${rgba(style.color, style.alpha * 0.78)}" ${stroke}`)}
+                    ${svgPolygon([p.p100, p.p110, p.p111, p.p101], `fill="${rgba(style.color, style.alpha * 0.68)}" ${stroke}`)}
+                    ${svgPolygon([p.p001, p.p101, p.p111, p.p011], `fill="${rgba(style.color, style.alpha)}" ${stroke}`)}
+                    ${[
+                        [p.p000, p.p100], [p.p000, p.p010], [p.p100, p.p110], [p.p010, p.p110],
+                        [p.p001, p.p101], [p.p001, p.p011], [p.p101, p.p111], [p.p011, p.p111],
+                        [p.p000, p.p001], [p.p100, p.p101], [p.p010, p.p011], [p.p110, p.p111]
+                    ].map(([a, b]) => svgLine(a, b, `${stroke} fill="none"`)).join("")}
+                    <rect x="${topCenter.x - 22}" y="${topCenter.y - 28}" width="44" height="23" rx="7" fill="${labelFill}"/>
+                    <text x="${topCenter.x}" y="${topCenter.y - 16}" fill="${labelText}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="700">${style.label}</text>
+                </g>`;
+        }
+
+        function svgEPs(step, cfg) {
+            const selectedKey = step.selectedEp ? keyOf(step.selectedEp) : "";
+            return `<g filter="url(#redGlow)">
+                ${step.eps.map(point => {
+                    const screen = projectIso(point, cfg);
+                    const selected = keyOf(point) === selectedKey;
+                    return `<circle class="ep-dot" cx="${screen.x}" cy="${screen.y}" r="${selected ? 7.6 : 6.2}" fill="${selected ? "#ff4444" : "#ff0000"}" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/>`;
+                }).join("")}
+            </g>`;
+        }
+
+        function svgAxes(cfg) {
+            const origin = projectIso([0, 0, 0], cfg);
+            const axes = [
+                [[24, 0, 0], "#72b7ff", "X"],
+                [[0, 24, 0], "#7ee0a8", "Y"],
+                [[0, 0, 24], "#ffb25f", "Z"]
+            ];
+            return `<g font-size="12" font-weight="700">
+                ${axes.map(([point, color, label]) => {
+                    const end = projectIso(point, cfg);
+                    return `${svgLine(origin, end, `stroke="${color}" stroke-width="2"`)}
+                        <text x="${end.x + 6}" y="${end.y + 5}" fill="${color}">${label}</text>`;
+                }).join("")}
+            </g>`;
+        }
+
+        function svgPolygon(points, attrs) {
+            return `<polygon points="${points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")}" ${attrs}/>`;
+        }
+
+        function svgLine(a, b, attrs) {
+            return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" ${attrs}/>`;
+        }
+
+        function drawFallbackScene(step, time) {
+            if (!fallbackCtx) return;
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            if (fallbackCanvas.width !== Math.floor(width * dpr) || fallbackCanvas.height !== Math.floor(height * dpr)) {
+                fallbackCanvas.width = Math.floor(width * dpr);
+                fallbackCanvas.height = Math.floor(height * dpr);
+                fallbackCanvas.style.width = `${width}px`;
+                fallbackCanvas.style.height = `${height}px`;
+            }
+
+            const ctx = fallbackCtx;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, width, height);
+
+            const sideClearance = width > 900 ? 460 : 40;
+            const scale = Math.max(2.35, Math.min(4.2, (width - sideClearance - 80) / 220, (height - 130) / 165));
+            const cfg = {
+                scale,
+                originX: sideClearance + (width - sideClearance) * 0.52,
+                originY: height * 0.66
+            };
+
+            drawIsoContainer(ctx, cfg);
+
+            getRejectedCandidates(step).forEach(candidate => {
+                drawIsoCuboid(ctx, { ...candidate.item, pos: candidate.pos }, cfg, {
+                    color: 0xff3f5f,
+                    alpha: 0.16,
+                    stroke: "rgba(255,90,120,0.95)",
+                    dashed: true,
+                    label: "失败"
+                });
+            });
+
+            step.items
+                .slice()
+                .sort((a, b) => (sum3(a.pos) - sum3(b.pos)))
+                .forEach(item => {
+                    drawIsoCuboid(ctx, item, cfg, {
+                        color: item.color,
+                        alpha: 0.92,
+                        stroke: "rgba(255,255,255,0.9)",
+                        label: item.id
+                    });
+                });
+
+            drawFallbackEPs(ctx, step, cfg, time);
+            drawMiniAxes(ctx, cfg);
+        }
+
+        function drawIsoContainer(ctx, cfg) {
+            const corners = [
+                [0, 0, 0], [CONTAINER.l, 0, 0], [0, CONTAINER.w, 0], [CONTAINER.l, CONTAINER.w, 0],
+                [0, 0, CONTAINER.h], [CONTAINER.l, 0, CONTAINER.h], [0, CONTAINER.w, CONTAINER.h], [CONTAINER.l, CONTAINER.w, CONTAINER.h]
+            ].map(point => projectIso(point, cfg));
+            const edges = [[0,1], [0,2], [1,3], [2,3], [4,5], [4,6], [5,7], [6,7], [0,4], [1,5], [2,6], [3,7]];
+
+            ctx.save();
+            ctx.lineWidth = 1.6;
+            ctx.strokeStyle = "rgba(61,221,255,0.82)";
+            ctx.shadowColor = "rgba(61,221,255,0.95)";
+            ctx.shadowBlur = 16;
+            edges.forEach(([a, b]) => line2(ctx, corners[a], corners[b]));
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "rgba(61,221,255,0.035)";
+            poly2(ctx, [corners[4], corners[5], corners[7], corners[6]], true);
+            poly2(ctx, [corners[2], corners[3], corners[7], corners[6]], true);
+            ctx.restore();
+        }
+
+        function drawIsoCuboid(ctx, item, cfg, style) {
+            const [x, y, z] = item.pos;
+            const [l, w, h] = item.size;
+            const p = {
+                p000: projectIso([x, y, z], cfg),
+                p100: projectIso([x + l, y, z], cfg),
+                p010: projectIso([x, y + w, z], cfg),
+                p110: projectIso([x + l, y + w, z], cfg),
+                p001: projectIso([x, y, z + h], cfg),
+                p101: projectIso([x + l, y, z + h], cfg),
+                p011: projectIso([x, y + w, z + h], cfg),
+                p111: projectIso([x + l, y + w, z + h], cfg)
+            };
+
+            ctx.save();
+            ctx.lineJoin = "round";
+            ctx.lineWidth = style.dashed ? 2 : 1.4;
+            ctx.strokeStyle = style.stroke;
+            if (style.dashed) ctx.setLineDash([8, 7]);
+            ctx.shadowColor = rgba(style.color, 0.48);
+            ctx.shadowBlur = style.dashed ? 18 : 22;
+
+            drawFace(ctx, [p.p010, p.p110, p.p111, p.p011], rgba(style.color, style.alpha * 0.78));
+            drawFace(ctx, [p.p100, p.p110, p.p111, p.p101], rgba(style.color, style.alpha * 0.68));
+            drawFace(ctx, [p.p001, p.p101, p.p111, p.p011], rgba(style.color, style.alpha));
+
+            ctx.shadowBlur = 0;
+            [
+                [p.p000, p.p100], [p.p000, p.p010], [p.p100, p.p110], [p.p010, p.p110],
+                [p.p001, p.p101], [p.p001, p.p011], [p.p101, p.p111], [p.p011, p.p111],
+                [p.p000, p.p001], [p.p100, p.p101], [p.p010, p.p011], [p.p110, p.p111]
+            ].forEach(([a, b]) => line2(ctx, a, b));
+
+            if (style.label) {
+                const topCenter = projectIso([x + l / 2, y + w / 2, z + h], cfg);
+                ctx.setLineDash([]);
+                ctx.fillStyle = style.dashed ? "rgba(255,63,95,0.92)" : "rgba(255,255,255,0.88)";
+                roundRect(ctx, topCenter.x - 20, topCenter.y - 26, 40, 22, 7);
+                ctx.fill();
+                ctx.fillStyle = style.dashed ? "#fff" : "#071018";
+                ctx.font = "700 13px Microsoft YaHei, sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(style.label, topCenter.x, topCenter.y - 15);
+            }
+
+            ctx.restore();
+        }
+
+        function drawFallbackEPs(ctx, step, cfg, time) {
+            const pulse = 1 + Math.sin(time * 0.004) * 0.12;
+            const selectedKey = step.selectedEp ? keyOf(step.selectedEp) : "";
+            ctx.save();
+            step.eps.forEach(point => {
+                const screen = projectIso(point, cfg);
+                const selected = keyOf(point) === selectedKey;
+                const radius = (selected ? 7.5 : 6) * pulse;
+                ctx.shadowColor = selected ? "rgba(255,80,80,1)" : "rgba(255,0,0,1)";
+                ctx.shadowBlur = selected ? 26 : 20;
+                ctx.fillStyle = selected ? "#ff4444" : "#ff0000";
+                ctx.beginPath();
+                ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "rgba(255,255,255,0.86)";
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
+        function drawMiniAxes(ctx, cfg) {
+            const origin = projectIso([0, 0, 0], cfg);
+            const axes = [
+                [[24, 0, 0], "#72b7ff", "X"],
+                [[0, 24, 0], "#7ee0a8", "Y"],
+                [[0, 0, 24], "#ffb25f", "Z"]
+            ];
+            ctx.save();
+            ctx.font = "700 12px Microsoft YaHei, sans-serif";
+            axes.forEach(([point, color, label]) => {
+                const end = projectIso(point, cfg);
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 2;
+                line2(ctx, origin, end);
+                ctx.fillText(label, end.x + 5, end.y + 4);
+            });
+            ctx.restore();
+        }
+
+        function drawFace(ctx, points, fill) {
+            ctx.fillStyle = fill;
+            poly2(ctx, points, true);
+            ctx.stroke();
+        }
+
+        function projectIso(point, cfg) {
+            const [x, y, z] = point;
+            return {
+                x: cfg.originX + (x - y) * cfg.scale,
+                y: cfg.originY + (x + y) * cfg.scale * 0.42 - z * cfg.scale
+            };
+        }
+
+        function poly2(ctx, points, close) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            if (close) ctx.closePath();
+            ctx.fill();
+        }
+
+        function line2(ctx, a, b) {
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+
+        function rgba(hex, alpha) {
+            const r = (hex >> 16) & 255;
+            const g = (hex >> 8) & 255;
+            const b = hex & 255;
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        function sum3(point) {
+            return point[0] + point[1] + point[2];
+        }
+
+        // ============================================================
+        // 7. 坐标、碰撞和辅助函数
+        // ============================================================
+        function toThree(point) {
+            const [x, y, z] = point;
+            return new THREE.Vector3(x, z, y);
+        }
+
+        function centerFromItem(item) {
+            const [x, y, z] = item.pos;
+            const [l, w, h] = item.size;
+            return new THREE.Vector3(x + l / 2, z + h / 2, y + w / 2);
+        }
+
+        function keyOf(point) {
+            return point.join(",");
+        }
+
+        // 讲解用的 AABB 检测函数，剧本中的判断文字与它一致。
+        function isInsideContainer(item) {
+            const [x, y, z] = item.pos;
+            const [l, w, h] = item.size;
+            return x >= 0 && y >= 0 && z >= 0
+                && x + l <= CONTAINER.l
+                && y + w <= CONTAINER.w
+                && z + h <= CONTAINER.h;
+        }
+
+        function hasAABBCollision(a, b) {
+            const [ax, ay, az] = a.pos;
+            const [al, aw, ah] = a.size;
+            const [bx, by, bz] = b.pos;
+            const [bl, bw, bh] = b.size;
+            return ax < bx + bl && ax + al > bx
+                && ay < by + bw && ay + aw > by
+                && az < bz + bh && az + ah > bz;
+        }
+
+        // 检查某个 EP 是否落在任何已放置道具的内部（死点）
+        // 与 137.cc 中的 isPointInsideAnyItem 逻辑一致
+        function isPointInsideAnyItem(point, items) {
+            const [px, py, pz] = point;
+            for (const item of items) {
+                const [x, y, z] = item.pos;
+                const [l, w, h] = item.size;
+                // 点恰好在面上（等于 x+l）不算内部，因为 EP 就是贴着面生成的
+                // 但点如果恰好等于某个物品的原点，那说明它已经被当做放置点用掉了
+                if (px >= x && px < x + l &&
+                    py >= y && py < y + w &&
+                    pz >= z && pz < z + h) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function clearGroup(group) {
+            while (group.children.length > 0) {
+                group.remove(group.children[0]);
+            }
+        }
+
+        function schedule(fn, delay) {
+            const id = setTimeout(fn, delay);
+            pendingTimers.push(id);
+            return id;
+        }
+
+        function clearPendingTimers() {
+            pendingTimers.forEach(id => clearTimeout(id));
+            pendingTimers = [];
+        }
+
+        function clearAutoTimer() {
+            if (autoTimer) clearTimeout(autoTimer);
+            autoTimer = null;
+        }
+
+        let haloTexture = null;
+        function getHaloTexture() {
+            if (haloTexture) return haloTexture;
+            const canvas = document.createElement("canvas");
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext("2d");
+            const gradient = ctx.createRadialGradient(64, 64, 2, 64, 64, 62);
+            gradient.addColorStop(0, "rgba(255,255,255,1)");
+            gradient.addColorStop(0.22, "rgba(255,255,255,0.72)");
+            gradient.addColorStop(0.58, "rgba(255,255,255,0.22)");
+            gradient.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            haloTexture = new THREE.CanvasTexture(canvas);
+            return haloTexture;
+        }
+
+        let dotTexture = null;
+        function getDotTexture() {
+            if (dotTexture) return dotTexture;
+            const canvas = document.createElement("canvas");
+            canvas.width = 96;
+            canvas.height = 96;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, 96, 96);
+            ctx.beginPath();
+            ctx.arc(48, 48, 30, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,255,255,1)";
+            ctx.fill();
+            ctx.lineWidth = 9;
+            ctx.strokeStyle = "rgba(255,255,255,1)";
+            ctx.stroke();
+            dotTexture = new THREE.CanvasTexture(canvas);
+            return dotTexture;
+        }
+
+        function makeLabelSprite(text, color, background) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = background;
+            roundRect(ctx, 28, 13, 72, 38, 9);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.font = "700 28px Microsoft YaHei, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, 64, 33);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true
+            });
+            return new THREE.Sprite(material);
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.arcTo(x + width, y, x + width, y + height, radius);
+            ctx.arcTo(x + width, y + height, x, y + height, radius);
+            ctx.arcTo(x, y + height, x, y, radius);
+            ctx.arcTo(x, y, x + width, y, radius);
+            ctx.closePath();
+        }
+
+        function updatePanel(index) {
+            const step = STEPS[index];
+            stepIndexEl.textContent = `Step ${index} / ${STEPS.length - 1}`;
+            stepTitleEl.textContent = step.title;
+            stepDescEl.textContent = step.desc;
+            ruleLineEl.innerHTML = activeDemo.rule;
+            basicModeBtn.classList.toggle("active", activeMode === "basic");
+            v2ModeBtn.classList.toggle("active", activeMode === "v2");
+            teachingCaseBtn.classList.toggle("active", activeScenario === "teaching");
+            case2Btn.classList.toggle("active", activeScenario === "case2");
+            case59Btn.classList.toggle("active", activeScenario === "case59");
+            hudModeEl.innerHTML = `<strong>方案</strong>：${activeDemo.label}`;
+            hudInputEl.innerHTML = `<strong>输入</strong>：${activeDemo.inputLabel}`;
+            hudBoxEl.innerHTML = `<strong>${activeDemo.boxLabel.split("：")[0]}</strong>：${activeDemo.boxLabel.split("：").slice(1).join("：")}`;
+            hudOrderEl.innerHTML = `<strong>放置序</strong>：${activeDemo.order}`;
+            hudOutputEl.innerHTML = `<strong>输出</strong>：${activeDemo.outputLabel}`;
+            legendContainerEl.textContent = activeDemo.legendLabel;
+            decisionListEl.innerHTML = step.decisions.map(([type, label, text]) => {
+                return `<li><span class="tag ${type}">${label}</span><span>${text}</span></li>`;
+            }).join("");
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = isAnimating || currentStep === 0;
+            nextBtn.disabled = isAnimating;
+            nextBtn.textContent = currentStep === STEPS.length - 1 ? "重置 ↺" : "下一步 →";
+            autoBtn.disabled = isAnimating && !autoPlaying;
+            autoBtn.classList.toggle("active", autoPlaying);
+            autoBtn.textContent = autoPlaying ? "Ⅱ 暂停" : "▶ 自动播放";
+        }
+
+        function toggleAutoPlay() {
+            autoPlaying = !autoPlaying;
+            clearAutoTimer();
+            updateButtons();
+
+            if (autoPlaying && !isAnimating) {
+                autoTimer = setTimeout(() => {
+                    const target = currentStep === STEPS.length - 1 ? 0 : currentStep + 1;
+                    renderStep(target);
+                }, 420);
+            }
+        }
+
+        // ============================================================
+        // 8. 主循环与自适应
+        // ============================================================
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            const pulse = 0.62 + Math.sin(time * 0.0022) * 0.12;
+            containerGroup.children.forEach((child, i) => {
+                if (child.material && child.material.opacity !== undefined && i > 0) {
+                    child.material.opacity = i === 1 ? 0.66 + pulse * 0.08 : 0.18 + pulse * 0.06;
+                }
+            });
+
+            spinningEps.forEach((ep, i) => {
+                // 红点脉冲呼吸效果
+                const pulse = 1 + Math.sin(time * 0.003 + ep.userData.pulseOffset) * 0.18;
+                ep.scale.setScalar(pulse);
+
+                // 光晕透明度变化
+                const halo = ep.children[0];
+                if (halo) {
+                    halo.material.opacity = 0.25 + Math.sin(time * 0.004 + i) * 0.1;
+                }
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        requestAnimationFrame(animate);
+
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        });
+
+        // 控制台中保留两个检测函数，方便讲解时临时验证候选位置。
+        window.demo3DPacking = {
+            isInsideContainer,
+            hasAABBCollision,
+            demos: DEMOS,
+            get activeDemo() { return activeDemo; },
+            get steps() { return STEPS; },
+            get items() { return ITEMS; }
+        };
+    </script>
+</body>
+</html>
